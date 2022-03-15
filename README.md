@@ -7,6 +7,7 @@
 
 # How to run
 All the script files, ```*.sh``` sequantilly run contract deployment, one-step (`requestValueTransfer()`), and two-step (`approve()` and `requestXXXTransfer()`) transfers.
+The `kscn` binary, ofifcially provided by Klaytn Team is currently not aware of one-step transfer handling from KIP7 and KIP17 token trasnfer reqeust and they are intentionally omitted.
 ### ERC-20
 ```
 cd erc20
