@@ -74,7 +74,7 @@ async function deploy(info) {
       }
   });
 
-  const url = child.conf.url;
+  const url = conf.child.url;
   log = 'registering bridges to the child node';
   await jsonRpcReq(url, log, 'subbridge_registerBridge', [conf.child.bridge, conf.parent.bridge]);
 
