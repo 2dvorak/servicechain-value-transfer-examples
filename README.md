@@ -1,8 +1,4 @@
-
-
-
-
-
+# Requirement
 1. `bridge_info.json` should be properly set before running tests. See [configuration example](https://ko.docs.klaytn.com/node/service-chain/getting-started/value-transfer)
 2. Set `RPC_API="klay,subbridge"` in your `kscnd.conf`
 
