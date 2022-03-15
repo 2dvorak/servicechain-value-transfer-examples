@@ -23,7 +23,7 @@ async function jsonRpcReq(url, log, method, params) {
 }
 
 async function deploy(info) {
-  const caver = new Caver(`http://${info.ip}:${info.port}`);
+  const caver = new Caver(info.url);
   info.sender = caver.klay.accounts.wallet.add(info.key).address;
 
   try {
@@ -74,7 +74,7 @@ async function deploy(info) {
       }
   });
 
-  const url = `http://${conf.child.ip}:${conf.child.port}`;
+  const url = conf.child.url;
   log = 'registering bridges to the child node';
   await jsonRpcReq(url, log, 'subbridge_registerBridge', [conf.child.bridge, conf.parent.bridge]);
 

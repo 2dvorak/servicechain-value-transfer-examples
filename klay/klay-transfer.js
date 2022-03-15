@@ -11,11 +11,11 @@ function sleep(ms) {
 (async function TokenTransfer() {
   const testcase = process.argv[1].substring(process.argv[1].lastIndexOf('/') + 1).replace(/\.[^/.]+$/, "");
   console.log(`------------------------- ${testcase} START -------------------------`)
-  const scnCaver = new Caver(`http://${conf.child.ip}:${conf.child.port}`);
+  const scnCaver = new Caver(conf.child.url);
   const scnInstanceBridge = new scnCaver.klay.Contract(bridgeAbi, conf.child.bridge);
   conf.child.sender = scnCaver.klay.accounts.wallet.add(conf.child.key).address;
 
-  const enCaver = new Caver(`http://${conf.parent.ip}:${conf.parent.port}`);
+  const enCaver = new Caver(conf.parent.url);
   const enInstanceBridge = new enCaver.klay.Contract(bridgeAbi, conf.parent.bridge);
   conf.parent.sender = enCaver.klay.accounts.wallet.add(conf.parent.key).address;
 
