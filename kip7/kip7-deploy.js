@@ -7,8 +7,8 @@ const conf = JSON.parse(fs.readFileSync('../common/bridge_info.json', 'utf8'));
 
 const bridgeAbi = JSON.parse(fs.readFileSync('../build/Bridge.abi', 'utf8'));
 const bridgeCode = fs.readFileSync('../build/Bridge.bin', 'utf8');
-const tokenAbi = JSON.parse(fs.readFileSync('../build/ServiceChainKIP7Token.abi', 'utf8'));
-const tokenCode = fs.readFileSync('../build/ServiceChainKIP7Token.bin', 'utf8');
+const tokenAbi = JSON.parse(fs.readFileSync('../build/ServiceChainTokenKIP7.abi', 'utf8'));
+const tokenCode = fs.readFileSync('../build/ServiceChainTokenKIP7.bin', 'utf8');
 
 async function jsonRpcReq(url, log, method, params) {
   if (typeof jsonRpcReq.id == 'undefined') jsonRpcReq.id = 0;
@@ -34,7 +34,7 @@ async function deploy(info) {
       info.bridge = info.newInstanceBridge._address;
       console.log(`info.bridge: ${info.bridge}`);
 
-      // Deploy ERC20 token
+      // Deploy KIP7 token
       const instance = new caver.klay.Contract(tokenAbi);
       info.newInstance = await instance.deploy({data: tokenCode, arguments:[info.newInstanceBridge._address]})
           .send({ from: info.sender, gas: 100000002, value: 0 });

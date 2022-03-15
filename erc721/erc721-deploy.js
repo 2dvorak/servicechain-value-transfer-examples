@@ -34,7 +34,7 @@ async function deploy(info) {
       info.bridge = info.newInstanceBridge._address;
       console.log(`info.bridge: ${info.bridge}`);
 
-      // Deploy ERC20 token
+      // Deploy ERC721 token
       const instance = new caver.klay.Contract(nftAbi);
       info.newInstance = await instance.deploy({data: nftCode, arguments:[info.newInstanceBridge._address]})
           .send({ from: info.sender, gas: 100000000, value: 0 });

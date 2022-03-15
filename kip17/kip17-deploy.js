@@ -7,8 +7,8 @@ const conf = JSON.parse(fs.readFileSync('../common/bridge_info.json', 'utf8'));
 
 const bridgeAbi = JSON.parse(fs.readFileSync('../build/Bridge.abi', 'utf8'));
 const bridgeCode = fs.readFileSync('../build/Bridge.bin', 'utf8');
-const nftAbi = JSON.parse(fs.readFileSync('../build/ServiceChainKIP17NFT.abi', 'utf8'));
-const nftCode = fs.readFileSync('../build/ServiceChainKIP17NFT.bin', 'utf8');
+const nftAbi = JSON.parse(fs.readFileSync('../build/ServiceChainTokenKIP17.abi', 'utf8'));
+const nftCode = fs.readFileSync('../build/ServiceChainTokenKIP17.bin', 'utf8');
 
 async function jsonRpcReq(url, log, method, params) {
     if (typeof jsonRpcReq.id == 'undefined') jsonRpcReq.id = 0;
@@ -18,7 +18,7 @@ async function jsonRpcReq(url, log, method, params) {
         "jsonrpc":"2.0","method":method,"params":params,"id": jsonRpcReq.id++
     }).then(res => {
     }).catch(err => {
-      console.log(res.data.error)
+      //console.log(res.data.error)
     })
 }
 
@@ -34,7 +34,7 @@ async function deploy(info) {
       info.bridge = info.newInstanceBridge._address;
       console.log(`info.bridge: ${info.bridge}`);
 
-      // Deploy ERC20 token
+      // Deploy KIP17 token
       const instance = new caver.klay.Contract(nftAbi);
       info.newInstance = await instance.deploy({data: nftCode, arguments:[info.newInstanceBridge._address]})
           .send({ from: info.sender, gas: 100000000, value: 0 });
