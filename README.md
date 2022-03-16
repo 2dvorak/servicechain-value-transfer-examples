@@ -35,6 +35,7 @@ cd kip17
 ### KLAY
 ```
 cd klay
+./klay-deploy-and-test-transfer.sh
 ```
 
 ### All
