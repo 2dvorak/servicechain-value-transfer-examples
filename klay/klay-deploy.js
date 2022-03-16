@@ -2,6 +2,7 @@ const Caver = require('caver-js');
 const axios = require('axios');
 const fs = require('fs')
 const util = require('util');
+const assert = require('assert');
 
 const conf = JSON.parse(fs.readFileSync('../common/bridge_info.json', 'utf8'));
 
@@ -20,17 +21,31 @@ async function jsonRpcReq(url, log, method, params) {
   })
 }
 
-async function deploy(info) {
+async function deploy(info, bridgeIdentity) {
   const caver = new Caver(info.url);
   info.sender = caver.klay.accounts.wallet.add(info.key).address;
 
   try {
-      // Deploy bridge
-      const instanceBridge = new caver.klay.Contract(bridgeAbi);
-      info.newInstanceBridge = await instanceBridge.deploy({data: bridgeCode, arguments:[true]})
-          .send({ from: info.sender, gas: 100000000, value: 0 });
-      info.bridge = info.newInstanceBridge._address;
-      console.log(`info.bridge: ${info.bridge}`);
+    // Send intial 1000 KLAY to ServiceChain bridge contract, not parent bridge contract
+    // Sending the initial KLAY for parent bridge contract (e.g., baobab, cypress, or your another ServiceChain) is handled at the time of sending KLAY from ServiceChain to Parent chain ('klay-transfer.js')
+    // Check the balance first before sending 1000 KLAY to bridge contract
+    let amount = 0;
+    if (bridgeIdentity == "child") {
+      amount = caver.utils.toPeb(1000, 'KLAY');
+      const senderBalance = await caver.utils.convertFromPeb(await caver.rpc.klay.getBalance(info.sender));
+      assert(senderBalance >= amount);
+      console.log("sender blaance:", senderBalance);
+    }
+
+    // Deploy bridge
+    const instanceBridge = new caver.klay.Contract(bridgeAbi);
+    info.newInstanceBridge = await instanceBridge.deploy({data: bridgeCode, arguments:[true]})
+        .send({ from: info.sender, gas: 100000000, value: amount });
+    info.bridge = info.newInstanceBridge._address;
+    const bridgeBalance = await caver.utils.convertFromPeb(await caver.rpc.klay.getBalance(info.bridge));
+    if (bridgeIdentity == "child")
+      console.log("Child bridge's blaance:", bridgeBalance);
+    console.log(`info.bridge: ${info.bridge}`);
   } catch (e) {
       console.log("Error:", e);
   }
@@ -39,8 +54,8 @@ async function deploy(info) {
 (async function TokenDeploy() {
   const testcase = process.argv[1].substring(process.argv[1].lastIndexOf('/') + 1).replace(/\.[^/.]+$/, "");
   console.log(`------------------------- ${testcase} START -------------------------`)
-  await deploy(conf.child);
-  await deploy(conf.parent);
+  await deploy(conf.child, 'child');
+  await deploy(conf.parent, 'parent');
 
   // register operator
   await conf.child.newInstanceBridge.methods.registerOperator(conf.child.operator).send({ from: conf.child.sender, gas: 100000000, value: 0 });
