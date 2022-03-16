@@ -20,23 +20,18 @@ function sleep(ms) {
   const enInstanceBridge = new enCaver.klay.Contract(bridgeAbi, conf.parent.bridge);
   conf.parent.sender = enCaver.klay.accounts.wallet.add(conf.parent.key).address;
 
-  const aliceOfMain = "0xc40b6909eb7085590e1c26cb3becc25368e24957";
-  const bobOfSub = "0xc40b6909eb7085590e1c26cb3becc25368e24957";
+  const aliceOfMain = "0xc40b6909eb7085590e1c26cb3becc25368e24958";
+  const bobOfSub = "0xc40b6909eb7085590e1c26cb3becc25368e24958";
 
   try {
     const amountTobeSent = enCaver.utils.convertToPeb('1', 'KLAY');
-    const initialAmount = enCaver.utils.toPeb(10000, 'KLAY');
+    const initialAmount = enCaver.utils.toPeb(1000, 'KLAY');
 
     const senderBalance = await enCaver.utils.convertFromPeb(await enCaver.rpc.klay.getBalance(conf.parent.sender));
     assert(senderBalance >= initialAmount);
     
     // Send KLAY from the sender on parent chain to bridge contract on the parent chain
-    await enCaver.klay.sendTransaction({
-      from: conf.parent.sender,
-      to: conf.parent.bridge,
-      value: initialAmount,
-      gas: 100000000,
-    });
+		await enInstanceBridge.methods.chargeWithoutEvent().send({from: conf.parent.sender, gas: 100000000, value: initialAmount});
 
     // Send 1 KLAY from child chain to parent chain
     console.log("Send 1 KLAY from child chain to parent chain");
