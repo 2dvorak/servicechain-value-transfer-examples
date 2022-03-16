@@ -1,5 +1,6 @@
 const Caver = require('caver-js');
 const fs = require('fs');
+const assert = require('assert');
 
 const conf = JSON.parse(fs.readFileSync('transfer_conf.json', 'utf8'));
 const bridgeAbi = JSON.parse(fs.readFileSync('../build/Bridge.abi', 'utf8'));
@@ -11,51 +12,48 @@ function sleep(ms) {
 (async function TokenTransfer() {
   const testcase = process.argv[1].substring(process.argv[1].lastIndexOf('/') + 1).replace(/\.[^/.]+$/, "");
   console.log(`------------------------- ${testcase} START -------------------------`)
-  const scnCaver = new Caver(`http://${conf.child.ip}:${conf.child.port}`);
+  const scnCaver = new Caver(conf.child.url);
   const scnInstanceBridge = new scnCaver.klay.Contract(bridgeAbi, conf.child.bridge);
   conf.child.sender = scnCaver.klay.accounts.wallet.add(conf.child.key).address;
 
-  const enCaver = new Caver(`http://${conf.parent.ip}:${conf.parent.port}`);
+  const enCaver = new Caver(conf.parent.url);
   const enInstanceBridge = new enCaver.klay.Contract(bridgeAbi, conf.parent.bridge);
   conf.parent.sender = enCaver.klay.accounts.wallet.add(conf.parent.key).address;
 
-  //const alice = "0xc40b6909eb7085590e1c26cb3becc25368e249e1";
-  const aliceOfMain = "0xc40b6909eb7085590e1c26cb3becc25368e24922";
-  const aliceOfSub = "0xc40b6909eb7085590e1c26cb3becc25368e24921";
+  const aliceOfMain = "0xc40b6909eb7085590e1c26cb3becc25368e24958";
+  const bobOfSub = "0xc40b6909eb7085590e1c26cb3becc25368e24958";
 
   try {
-    const amount = enCaver.utils.convertToPeb('1', 'KLAY');
+    const amountTobeSent = enCaver.utils.convertToPeb('1', 'KLAY');
+    const initialAmount = enCaver.utils.toPeb(1000, 'KLAY');
 
-    // Send klay from SCN to EN
-    console.log('Send 1 klay from Main to Sub');
-    await enCaver.klay.sendTransaction({
-      from: conf.parent.sender,
-      to: conf.parent.bridge,
-      value: amount,
-      gas: 100000000,
-    });
+    const senderBalance = await enCaver.utils.convertFromPeb(await enCaver.rpc.klay.getBalance(conf.parent.sender));
+    assert(senderBalance >= initialAmount);
+    
+    // Send KLAY from the sender on parent chain to bridge contract on the parent chain
+		await enInstanceBridge.methods.chargeWithoutEvent().send({from: conf.parent.sender, gas: 100000000, value: initialAmount});
 
-    await scnInstanceBridge.methods.requestKLAYTransfer(aliceOfMain, amount, []).send({from: conf.child.sender,gas: 100000000, value: amount })
+    // Send 1 KLAY from child chain to parent chain
+    console.log("Send 1 KLAY from child chain to parent chain");
+    await scnInstanceBridge.methods.requestKLAYTransfer(aliceOfMain, amountTobeSent, []).send({from: conf.child.sender,gas: 100000000, value: amountTobeSent});
     // Wait event to be trasnferred to child chain and contained into new block
     await sleep(6000);
 
-    // Send klay from EN to SCN
-    console.log('Send 1 klay from Sub to Main');
-    await scnCaver.klay.sendTransaction({
-      from: conf.child.sender,
-      to: conf.child.bridge,
-      value: amount,
-      gas: 100000000,
-    });
-    await enInstanceBridge.methods.requestKLAYTransfer(aliceOfSub, amount, []).send({from: conf.parent.sender,gas: 100000000, value: amount })
+    // Send 1 KLAY from parent chain to child chain
+    console.log('Send 1 KLAY from parent chain to child chain');
+    await enInstanceBridge.methods.requestKLAYTransfer(bobOfSub, amountTobeSent, []).send({from: conf.parent.sender,gas: 100000000, value: amountTobeSent});
     // Wait event to be trasnferred to child chain and contained into new block
-    await sleep(6000);
+    await sleep(2000);
 
     // Check alice's balance in both Parent Chain and Child Chain
     let balanceOfAliceOfMain = await enCaver.utils.convertFromPeb(await enCaver.rpc.klay.getBalance(aliceOfMain));
-    let balanceOfAliceOfSub = await scnCaver.utils.convertFromPeb(await scnCaver.rpc.klay.getBalance(aliceOfSub));
-    console.log('By Klay:(', balanceOfAliceOfMain, '), By Peb:(', await enCaver.rpc.klay.getBalance(aliceOfMain),')');
-    console.log('By Klay:(', balanceOfAliceOfSub, '), By Peb:(', await scnCaver.rpc.klay.getBalance(aliceOfSub),')');
+    let balanceOfBobOfSub = await scnCaver.utils.convertFromPeb(await scnCaver.rpc.klay.getBalance(bobOfSub));
+    let balanceOfMainBridge = await enCaver.utils.convertFromPeb(await enCaver.rpc.klay.getBalance(conf.parent.bridge));
+    let balanceOfSubBridge = await scnCaver.utils.convertFromPeb(await scnCaver.rpc.klay.getBalance(conf.child.bridge));
+    console.log(`Alice's balance in the parentchain         :`, balanceOfAliceOfMain);
+    console.log(`  Bob's balance in the childchain          :`, balanceOfBobOfSub);
+    console.log(`Parent bridge's balance in the paretnchain :`, balanceOfMainBridge);
+    console.log(`Child bridge's balance in the childchain   :`, balanceOfSubBridge);
     console.log(`------------------------- ${testcase} END -------------------------`)
   } catch (e) {
     console.log("Error:", e);
